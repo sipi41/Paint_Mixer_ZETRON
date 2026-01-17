@@ -1,0 +1,22 @@
+﻿@PaintMixer_HostAddress = https://localhost:44380
+
+@Red=5
+@Green=0
+@Blue=5
+@Black=5
+@White=0
+@Yellow=34
+
+POST {{PaintMixer_HostAddress}}/api/paintmix/FromValues?Red={{Red}}&Green={{Green}}&Blue={{Blue}}&Black={{Black}}&White={{White}}&Yellow={{Yellow}}
+
+###
+
+@JobId=0
+GET {{PaintMixer_HostAddress}}/api/PaintMix/Job/{{JobId}}/Status
+
+###
+
+@JobId=0
+DELETE {{PaintMixer_HostAddress}}/api/PaintMix/Job/{{JobId}}/cancel
+
+###

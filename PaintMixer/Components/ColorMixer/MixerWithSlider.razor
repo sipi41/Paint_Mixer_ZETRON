@@ -1,0 +1,211 @@
+﻿@rendermode InteractiveServer
+@inject IJSRuntime js
+@inject HttpClient httpClient
+
+@using MudBlazor
+@using PaintMixer.ViewModels
+@using System.Reflection
+@using System.Text.Json
+@using System.Text
+@inject NavigationManager navigationManager
+
+<PageTitle>Color Mixer</PageTitle>
+
+<MudPaper Class="pa-4" Elevation="4">
+    <MudText Typo="Typo.h5">Color Mixer</MudText>
+    
+    <MudText Class="@((Total > 99 ? "text-danger" : "text-primary") + " my-3")">Total: <b>@(Math.Round(Total))%</b> (max = 100)</MudText>
+
+    @foreach (var color in ColorValues.Keys)
+    {
+        <div class="row mb-1">
+            <div class="col-1" style="background-color:@(color); border:1px solid black;">
+                &nbsp;
+            </div>
+            <div class="col">
+                <MudSlider T="double"
+                           Step="1"
+                           Min="0"
+                           Max="100"
+                           Immediate="false"
+                           ValueLabel="true"
+                           ValueChanged="@((v) => OnSliderChanged(color, v))"
+                           Value="@ColorValues[color]"
+                           Style="" Class="">
+                    <span>@(color)</span> <small class="text-secondary">@($"({(int)ColorValues[color]})")</small>
+                </MudSlider>
+            </div>
+        </div>
+    }
+
+    <div class="mt-3">
+        <button class="btn btn-warning" @onclick="Reset"><i class="fa-solid fa-eraser"></i> Reset</button>
+        <button class="btn btn-primary ms-1" @onclick="SendJob"><i class="fa-solid fa-brush"></i> Create Job</button>
+    </div>
+
+</MudPaper>
+
+@code {
+
+    private IJSObjectReference? Helpers;
+
+    private ColoringModel coloringModel { get; set; } = new();
+
+    private Dictionary<string, double> ColorValues = new Dictionary<string, double>();
+
+    private double Total { get; set; } = 0;
+
+    #region INITIALIZATION
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetColorsFromModel();
+
+        httpClient.BaseAddress = new Uri(navigationManager.BaseUri);
+
+        await base.OnInitializedAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Helpers ??= await js.InvokeAsync<IJSObjectReference>("import", "./Helpers.js");
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    #endregion
+
+    #region PREPARATION
+
+    private async Task GetColorsFromModel()
+    {
+        Type modelType = coloringModel.GetType();
+        PropertyInfo[] props = modelType.GetProperties();
+        foreach (var propName in props.Where(w => w.Name.StartsWith("tot", StringComparison.CurrentCultureIgnoreCase) == false).Select(s => s.Name))
+        {
+            ColorValues.Add(propName, 0);
+        }
+    }
+
+    JsonSerializerOptions deseralizationOpts = new JsonSerializerOptions
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
+    #endregion    
+
+    #region API INTERACTION
+
+    private async Task SendJob()
+    {
+        if (Total < 1)
+        {
+            await Helpers!.InvokeVoidAsync("Helpers.ShowAlert", "Add Colors", "Please add at least one color to proceed...", "warning");
+        }
+        else
+        {
+            // create a new instance of Coloring model...
+
+            coloringModel = new();
+
+            // read the current values and assign to the model...
+
+            foreach (KeyValuePair<string, double> color in ColorValues)
+            {
+                await SetPropertyValue(coloringModel, color.Key, color.Value);
+            }
+
+			// send to API...
+
+            HttpResponseMessage message = await httpClient.PostAsJsonAsync<ColoringModel>("/api/PaintMix/FromModel", coloringModel);
+
+            string messageBody = await message.Content.ReadAsStringAsync();
+
+            if(message.IsSuccessStatusCode == false)
+            {
+				// show errors...(if any)
+
+                ApiErrorModel apiErrorResponseModel = JsonSerializer.Deserialize<ApiErrorModel>(messageBody, deseralizationOpts)!;
+
+                StringBuilder errorsStringBuilder = new StringBuilder();
+                errorsStringBuilder.Append(@"<div class=""text-danger"">");
+                errorsStringBuilder.Append(@"<div class=""fw-bold text-center mb-2"">Errors found:</div>");
+                errorsStringBuilder.Append(@"<ul>");
+
+                foreach (string error in apiErrorResponseModel.ErrorMessages)
+                {
+                    errorsStringBuilder.Append($@"<li>{error}</li>");
+				}
+
+                errorsStringBuilder.Append(@"</ul>");
+                errorsStringBuilder.Append(@"</div>");
+
+                await Helpers!.InvokeVoidAsync("Helpers.ShowAlert", "Errors Detected", "There was a problem with your request and the operation could not be completed, please check the details below.", "error", errorsStringBuilder.ToString());
+
+            } else
+            {
+				// show success message...
+
+                ApiResponseModel apiResponseModel = JsonSerializer.Deserialize<ApiResponseModel>(messageBody, deseralizationOpts)!;
+
+                await Helpers!.InvokeVoidAsync("Helpers.ShowAlert", "Job Created!", apiResponseModel.Description, "success");
+            }
+
+        }
+
+    }
+
+    private async Task SetPropertyValue(ColoringModel model, string propertyName, double value)
+    {
+        Type modelType = model.GetType();
+        PropertyInfo? prop = modelType.GetProperty(propertyName);
+        if (prop != null && prop.CanWrite)
+        {
+            prop.SetValue(model, (int)value);
+        }
+	}
+
+    #endregion
+
+    #region SLIDERS
+
+    private async Task Reset()
+    {
+        ColorValues.Keys.ToList().ForEach(c => ColorValues[c] = 0);
+        Total = 0;
+    }
+
+    private async Task OnSliderChanged(string color, double newValue)
+    {
+        Total = ColorValues.Values.Sum();
+        double oldValue = ColorValues[color];
+
+        double currentNumber = (Total - oldValue);
+
+        if (currentNumber + newValue > 100)
+        {
+            double available = 100 - currentNumber;
+
+            if (available >= 1 && available != oldValue) ColorValues[color] = available;
+            else
+            {
+				ColorValues[color] = oldValue + 0.001; //hack to make slider jump back to old value
+                ColorValues[color] = oldValue - 0.001; //hack to make slider jump back to old value
+            }
+
+        }
+        else
+        {
+            ColorValues[color] = newValue;
+        }
+
+        Total = ColorValues.Values.Sum();
+
+    }
+
+    #endregion       
+
+}

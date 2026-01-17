@@ -1,0 +1,24 @@
+﻿@page "/"
+@using PaintMixer.Components.ColorMixer
+@inject NavigationManager navigationManager
+
+<h2 class="p-3">Welcome to Paint Mixer!</h2>
+
+<div class="container-fluid">
+	<div class="row">
+		<div class="col-12 col-sm-6 col-md-5 col-lg-4 mb-2">
+
+			<MixerWithSlider></MixerWithSlider>
+
+		</div>
+		<div class="col ">
+
+			<div class="p-2 h5">
+				For API endpoints, please open the following link: <b><a href="@(navigationManager.BaseUri)swagger" class="text-primary" target="_blank">@(navigationManager.BaseUri)swagger</a></b>
+			</div>
+
+		</div>
+		
+	</div>
+</div>
+

@@ -1,6 +1,6 @@
 # Paint Mixer v3 
 
-<img width="1401" height="573" alt="image" src="https://github.com/user-attachments/assets/a2eabae9-4da5-424c-ae99-721ed6edd7c8" />
+<img width="1391" height="580" alt="image" src="https://github.com/user-attachments/assets/014f5a8d-b6c7-4665-96d4-1eef21a910ae" />
 
 Sample created with Blazor Server and .Net Core 10.
 

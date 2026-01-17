@@ -2,7 +2,7 @@
 
 <img width="1391" height="580" alt="image" src="https://github.com/user-attachments/assets/014f5a8d-b6c7-4665-96d4-1eef21a910ae" />
 
-Sample created with Blazor Server, API Controller and .Net Core 10. (and a lot of help with the Emulator by ZETRON)
+Sample created with Blazor Server, API Controller, MudBlazor Controls and .Net Core 10. (and a lot of help with the Emulator by ZETRON)
 
 API information is located in the https://localhost{YOUR_PORT}/swagger
 

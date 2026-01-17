@@ -1,4 +1,4 @@
-# Paint Mixer v1
+# Paint Mixer v2
 
 <img width="1284" height="634" alt="image" src="https://github.com/user-attachments/assets/1b15c760-22f1-4731-8cad-fef14e5f4e50" />
 

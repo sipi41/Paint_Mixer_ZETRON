@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using MudBlazor
 @using PaintMixer.Components.ColorMixer
 @inject NavigationManager navigationManager
 
@@ -15,20 +16,29 @@
 
 			<CancelJob></CancelJob>
 
+			<MudPaper Class="pa-4 mt-4" Elevation="4">
+
+				<MudCard>
+					<MudCardContent>
+						<img class="float-end w-25" src="/swagger.png"  />
+						<MudText><div class="h4 fw-normal"><i class="fa-solid fa-circle-info text-success"></i> API Endpoints</div></MudText>
+						
+						<MudText Typo="Typo.body2">The full set of API Endpoints are described and ready to use in the link below.</MudText>
+					</MudCardContent>
+					<MudCardActions>
+						<MudButton Variant="Variant.Text" Color="Color.Success" Target="_blank" Href="@(navigationManager.BaseUri + "swagger")">@(navigationManager.BaseUri)swagger</MudButton>
+					</MudCardActions>
+				</MudCard>
+
+			</MudPaper>
+
 		</div>
 		<div class="col-12 col-sm-6 col-md-5 col-lg-4 mb-2">
 
 			<JobStatus></JobStatus>
 
-		</div>
-		<div class="col-12 mt-2">
+		</div>		
 
-			<div class="p-2 h5">
-				For API endpoints, please open the following link: <b><a href="@(navigationManager.BaseUri)swagger" class="text-primary" target="_blank">@(navigationManager.BaseUri)swagger</a></b>
-			</div>
-
-		</div>
-		
 	</div>
 </div>
 

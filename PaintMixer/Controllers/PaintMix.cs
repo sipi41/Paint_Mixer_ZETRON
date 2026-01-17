@@ -143,7 +143,7 @@ namespace PaintMixer.Controllers
                     },
                     Description = returnedCode switch
                     {
-                        -1 => $"Job with ID {JobId} could not be canceled.",
+                        -1 => $"Job with ID {JobId} does not exist or could not be canceled.",
                         0 => $"The job with ID {JobId} was successfuly canceled.",
                         _ => $"Unknown cancelation status for job ID {JobId}."
                     }

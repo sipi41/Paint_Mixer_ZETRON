@@ -1,0 +1,116 @@
+﻿@rendermode InteractiveServer
+
+@inject IJSRuntime js
+@inject HttpClient httpClient
+@inject NavigationManager navigationManager
+
+@implements IAsyncDisposable
+
+@using MudBlazor
+@using PaintMixer.ViewModels
+@using System.Reflection
+@using System.Text.Json
+@using System.Text
+@using System.ComponentModel.DataAnnotations
+
+<MudPaper Class="pa-4" Elevation="4">
+
+	<MudText Typo="Typo.h5"><i class="fa-solid fa-folder-minus text-danger"></i> Cancel Job</MudText>
+
+	<p class="mt-3">To cancel a Job in progress, please enter the associated ID:</p>
+
+	<EditForm Model="@formModel" OnValidSubmit="ProceedToCancelJob">
+		<DataAnnotationsValidator />
+		<MudNumericField Class="" T="int?" @bind-Value="@formModel.JobId" Label="Job ID" Variant="Variant.Outlined" Step="1" HideSpinButtons="true" />
+		<div class="mb-2" style="font-size:small"><ValidationMessage For="@(() => formModel.JobId)" /></div>
+		<button class="btn btn-danger" type="submit"><i class="fa-solid fa-ban"></i> Cancel Job</button>		
+	</EditForm>
+
+</MudPaper>
+
+@code {
+
+	private IJSObjectReference? Helpers;
+
+	#region INITIALIZATION
+
+	protected override async Task OnInitializedAsync()
+	{
+		httpClient.BaseAddress = new Uri(navigationManager.BaseUri);
+
+		await base.OnInitializedAsync();
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			Helpers ??= await js.InvokeAsync<IJSObjectReference>("import", "./Helpers.js");
+		}
+
+		await base.OnAfterRenderAsync(firstRender);
+	}
+
+	#endregion
+
+	#region Form Model
+
+	internal class FormModel
+	{
+		[Required(AllowEmptyStrings = false, ErrorMessage = "Please enter the Job Id")]
+		[Range(0, int.MaxValue, ErrorMessage = "Accepted Job Ids are from {1} and {2}")] 
+		public int? JobId { get; set; }
+	}
+
+	FormModel formModel = new FormModel();	
+
+	#endregion
+
+	#region PREPARATION
+
+	JsonSerializerOptions deseralizationOpts = new JsonSerializerOptions
+	{
+		PropertyNameCaseInsensitive = true 
+	};
+
+	#endregion
+
+	#region API Request
+
+	public async Task ProceedToCancelJob()
+	{
+		// send to API...
+
+		HttpResponseMessage message = await httpClient.DeleteAsync($"/api/PaintMix/Job/{formModel.JobId}/cancel");
+
+		string messageBody = await message.Content.ReadAsStringAsync();
+
+		ApiResponseModel apiResponseModel = JsonSerializer.Deserialize<ApiResponseModel>(messageBody, deseralizationOpts)!;
+
+		if (message.IsSuccessStatusCode == false)
+		{
+			// show error message...
+			await Helpers!.InvokeVoidAsync("Helpers.ShowAlert", $"Errors Detected (code {apiResponseModel.Code})", apiResponseModel.Description, "error");
+		}
+		else
+		{
+			// show success message...
+			await Helpers!.InvokeVoidAsync("Helpers.ShowAlert", "Job Canceled!", apiResponseModel.Description, "success");
+		}
+
+		// reset the form...
+
+		formModel = new();
+	}
+
+	#endregion
+
+	public async ValueTask DisposeAsync()
+	{
+		if (Helpers is not null)
+		{
+			await Helpers.DisposeAsync();
+		}
+	}
+
+}
